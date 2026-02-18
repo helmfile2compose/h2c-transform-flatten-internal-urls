@@ -97,7 +97,15 @@ def _rewrite_caddy(caddy_entries, alias_map):
     """Rewrite FQDN upstreams and server_sni in Caddy entries."""
     for entry in caddy_entries:
         upstream = entry.get("upstream", "")
-        rewritten = _rewrite_text(upstream, alias_map)
+        # FQDN flattening first
+        rewritten = _rewrite_k8s_dns(upstream)
+        # Upstream is bare host:port — extract host, resolve alias, rebuild
+        if ":" in rewritten:
+            host, port = rewritten.rsplit(":", 1)
+            resolved = alias_map.get(host, host)
+            rewritten = f"{resolved}:{port}"
+        else:
+            rewritten = alias_map.get(rewritten, rewritten)
         if rewritten != upstream:
             entry["upstream"] = rewritten
 
