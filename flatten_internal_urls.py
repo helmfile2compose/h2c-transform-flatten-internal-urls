@@ -4,8 +4,7 @@ Strips Docker Compose network aliases and rewrites K8s FQDNs to short
 compose service names. Restores nerdctl compatibility (nerdctl silently
 ignores network aliases) and simplifies compose DNS resolution.
 
-Incompatible with cert-manager (certs reference FQDNs that flattening
-would strip).
+Note: cert-manager declares incompatibility with this transform.
 """
 
 import os

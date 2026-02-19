@@ -22,12 +22,6 @@ Beyond nerdctl, flattening also produces cleaner compose output — no alias blo
 4. **Rewrites FQDN upstreams** in Caddy entries
 5. **Resolves K8s Service aliases** to compose service names (e.g. `keycloak-service` → `keycloak`)
 
-## Incompatibility
-
-**Incompatible with `cert-manager`.** The cert-manager extension generates certificates with SANs matching K8s FQDNs. Flattening those FQDNs breaks TLS verification. h2c-manager blocks this combination by default.
-
-Override with `--ignore-compatibility-errors flatten-internal-urls` if you know what you're doing.
-
 ## Install
 
 ```bash
