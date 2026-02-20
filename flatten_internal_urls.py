@@ -118,7 +118,8 @@ def _rewrite_caddy(caddy_entries, alias_map):
 class FlattenInternalUrls:
     """Strip network aliases and rewrite FQDNs to short Docker names."""
 
-    priority = 200  # run after other transforms
+    name = "flatten-internal-urls"
+    priority = 2000  # run after other transforms
 
     def transform(self, compose_services, caddy_entries, ctx):
         """Flatten all K8s FQDNs to short compose service names."""
