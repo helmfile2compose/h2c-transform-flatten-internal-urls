@@ -107,7 +107,7 @@ class FlattenInternalUrls:  # pylint: disable=too-few-public-methods  # contract
     def _rewrite_ingress_entries(ingress_entries, alias_map):
         """Rewrite FQDN upstreams and server_sni in ingress entries."""
         for entry in ingress_entries:
-            upstream = entry.get("upstream", "")
+            upstream = entry.get("upstream") or ""
             # FQDN flattening first
             rewritten = FlattenInternalUrls._rewrite_k8s_dns(upstream)
             # Upstream is bare host:port — extract host, resolve alias, rebuild
@@ -120,7 +120,7 @@ class FlattenInternalUrls:  # pylint: disable=too-few-public-methods  # contract
             if rewritten != upstream:
                 entry["upstream"] = rewritten
 
-            sni = entry.get("server_sni", "")
+            sni = entry.get("server_sni") or ""
             if sni:
                 rewritten = FlattenInternalUrls._rewrite_k8s_dns(sni)
                 if rewritten != sni:
