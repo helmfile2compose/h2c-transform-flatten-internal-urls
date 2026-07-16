@@ -8,15 +8,8 @@ Note: cert-manager declares incompatibility with this transform.
 """
 
 import os
-import re
 
-
-# K8s internal DNS → short service name (same pattern as h2c-core _K8S_DNS_RE)
-_K8S_DNS_RE = re.compile(
-    r'([a-z0-9](?:[a-z0-9-]*[a-z0-9])?)\.'       # service name (captured)
-    r'(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)\.'       # namespace (discarded)
-    r'svc(?:\.cluster\.local)?'                    # svc[.cluster.local]
-)
+from dekube import apply_alias_map, rewrite_k8s_dns
 
 
 class FlattenInternalUrls:  # pylint: disable=too-few-public-methods  # contract: one class, one method
@@ -26,34 +19,11 @@ class FlattenInternalUrls:  # pylint: disable=too-few-public-methods  # contract
     priority = 2000  # run after other transforms
 
     @staticmethod
-    def _rewrite_k8s_dns(text):
-        """Replace <svc>.<ns>.svc.cluster.local with just <svc>."""
-        return _K8S_DNS_RE.sub(r'\1', text)
-
-    @staticmethod
-    def _apply_alias_map(text, alias_map):
-        """Replace K8s Service names with compose service names in hostname positions.
-
-        Matches aliases preceded by :// or @ (URLs, Redis URIs) and followed by
-        / : whitespace, quotes, or end-of-string — so only hostnames are affected,
-        not substrings like bucket names.
-        """
-        for alias, target in alias_map.items():
-            text = re.sub(
-                r'(?<=[/@])'
-                + re.escape(alias)
-                + r'''(?=[/:\s"']|$)''',
-                target,
-                text,
-            )
-        return text
-
-    @staticmethod
     def _rewrite_text(text, alias_map):
         """Apply FQDN flattening + alias map resolution to a string."""
-        text = FlattenInternalUrls._rewrite_k8s_dns(text)
+        text = rewrite_k8s_dns(text)
         if alias_map:
-            text = FlattenInternalUrls._apply_alias_map(text, alias_map)
+            text = apply_alias_map(text, alias_map)
         return text
 
     @staticmethod
@@ -109,7 +79,7 @@ class FlattenInternalUrls:  # pylint: disable=too-few-public-methods  # contract
         for entry in ingress_entries:
             upstream = entry.get("upstream") or ""
             # FQDN flattening first
-            rewritten = FlattenInternalUrls._rewrite_k8s_dns(upstream)
+            rewritten = rewrite_k8s_dns(upstream)
             # Upstream is bare host:port — extract host, resolve alias, rebuild
             if ":" in rewritten:
                 host, port = rewritten.rsplit(":", 1)
@@ -122,7 +92,7 @@ class FlattenInternalUrls:  # pylint: disable=too-few-public-methods  # contract
 
             sni = entry.get("server_sni") or ""
             if sni:
-                rewritten = FlattenInternalUrls._rewrite_k8s_dns(sni)
+                rewritten = rewrite_k8s_dns(sni)
                 if rewritten != sni:
                     entry["server_sni"] = rewritten
 
